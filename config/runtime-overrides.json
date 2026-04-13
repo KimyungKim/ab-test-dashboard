@@ -1,0 +1,42 @@
+{
+  "runtime": {
+    "servingCatalog": "analytics_serving",
+    "servingSchema": "gameops",
+    "views": {
+      "daily": "ae_daily_secure",
+      "segment": "ae_segment_secure",
+      "retention": "ae_retention_secure"
+    },
+    "groups": {
+      "aeReaders": [
+        "ae-readers"
+      ],
+      "aeRetention": [
+        "ae-retention"
+      ],
+      "analyticsAdmin": [
+        "analytics-admin"
+      ]
+    }
+  },
+  "queries": {
+    "ae_daily_trend": {
+      "requiredGroups": [
+        "ae-readers"
+      ],
+      "sqlTemplate": "SELECT\n  {{DATE_DIMENSION}} AS metric_date,\n  SUM(active_users) AS active_users,\n  SUM(session_count) AS session_count,\n  SUM(payers) AS payers,\n  SUM(gross_revenue) AS gross_revenue\nFROM analytics_serving.gameops.ae_daily_secure\nWHERE game_code = :game_code\n  AND metric_date BETWEEN :start_date AND :end_date\n  {{REGION_FILTER}}\nGROUP BY 1\nORDER BY 1"
+    },
+    "ae_segment_mix": {
+      "requiredGroups": [
+        "ae-readers"
+      ],
+      "sqlTemplate": "SELECT\n  {{DIMENSION_SQL}} AS segment_key,\n  SUM(active_users) AS active_users,\n  SUM(payers) AS payers,\n  SUM(gross_revenue) AS gross_revenue,\n  ROUND(SUM(gross_revenue) / NULLIF(SUM(payers), 0), 2) AS arppu\nFROM analytics_serving.gameops.ae_segment_secure\nWHERE game_code = :game_code\n  AND metric_date BETWEEN :start_date AND :end_date\n  {{REGION_FILTER}}\nGROUP BY 1\nORDER BY gross_revenue DESC"
+    },
+    "ae_retention_health": {
+      "requiredGroups": [
+        "ae-retention"
+      ],
+      "sqlTemplate": "SELECT\n  cohort_date,\n  d1_retention,\n  d7_retention,\n  d30_retention\nFROM analytics_serving.gameops.ae_retention_secure\nWHERE game_code = :game_code\n  AND cohort_date BETWEEN :start_date AND :end_date\n  {{REGION_FILTER}}\nORDER BY cohort_date"
+    }
+  }
+}

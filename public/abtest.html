@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A/B Test</title>
+    <link rel="stylesheet" href="/styles.css?v=20260408c" />
+  </head>
+  <body>
+    <div class="page-shell page-shell-compact">
+      <header class="topbar">
+        <div>
+          <h1 class="topbar-title">A/B Test Dashboard</h1>
+        </div>
+        <div class="topbar-meta">
+          <button id="abtest-cache-clear-all" type="button" class="cache-reset-button">캐시 초기화</button>
+        </div>
+      </header>
+
+      <nav class="view-tabs">
+        <button id="tab-list" class="view-tab is-active" type="button">A/B Test in Slack</button>
+        <button id="tab-analysis" class="view-tab" type="button">A/B Test Dashboard</button>
+        <button id="tab-product-config" class="view-tab view-tab--secondary" type="button">Product 설정</button>
+      </nav>
+
+      <!-- A/B Test 목록 (Slack) -->
+      <main id="abtest-list-view" class="abtest-view abtest-view--active">
+        <section class="panel panel-results abtest-panel">
+          <div id="abtest-list-section">
+            <div class="panel-header panel-header-tight">
+              <h2>A/B Tests</h2>
+              <p id="abtest-list-meta" class="subheadline">목록을 불러오는 중입니다.</p>
+            </div>
+            <div class="abtest-search-bar">
+              <select id="abtest-list-game" class="abtest-game-select">
+                <option value="cvs">CVS</option>
+                <option value="cbn">CBN</option>
+                <option value="jpm">JPM</option>
+              </select>
+              <select id="abtest-list-status" class="abtest-game-select">
+                <option value="all">전체</option>
+                <option value="active">진행중</option>
+                <option value="ended">종료</option>
+              </select>
+              <input type="text" id="abtest-search-text" class="abtest-search-input" placeholder="이름, ID 검색..." autocomplete="off" />
+              <button id="abtest-date-btn" type="button" class="abtest-date-btn">날짜 검색</button>
+              <button id="abtest-date-clear" type="button" class="abtest-date-clear" hidden>× 초기화</button>
+            </div>
+            <div id="abtest-cal-wrap" class="abtest-cal-wrap" hidden></div>
+            <div id="abtest-list-root" class="abtest-list-root"></div>
+          </div>
+
+          <div id="abtest-detail-section" hidden>
+            <div class="abtest-detail-header">
+              <button id="abtest-back-button" class="secondary-button" type="button">← 목록으로</button>
+              <div>
+                <h2 id="abtest-detail-title">A/B Test</h2>
+                <p id="abtest-detail-meta" class="subheadline"></p>
+              </div>
+              <button id="abtest-edit-btn" type="button" class="abtest-edit-btn">수정</button>
+            </div>
+
+            <div id="abtest-edit-panel" class="abtest-edit-panel" hidden>
+              <div class="edit-panel-header">
+                <h3 class="edit-panel-title">수동 추가</h3>
+                <div class="edit-panel-header-actions">
+                  <button id="abtest-edit-reset" type="button" class="edit-reset-btn">초기화</button>
+                  <button id="abtest-edit-close" type="button" class="edit-panel-close" aria-label="닫기">×</button>
+                </div>
+              </div>
+              <div class="edit-section">
+                <h4 class="edit-section-title">공지</h4>
+                <div id="edit-manual-announcement"></div>
+                <div class="edit-input-row">
+                  <input id="edit-announcement-url" type="url" class="edit-text-input" placeholder="Slack 링크..." />
+                  <button id="edit-announcement-submit" type="button" class="edit-submit-btn">설정</button>
+                </div>
+                <p id="edit-announcement-status" class="edit-status"></p>
+              </div>
+              <div class="edit-section">
+                <h4 class="edit-section-title">분석 결과</h4>
+                <div id="edit-manual-analysis"></div>
+                <div class="edit-input-row">
+                  <input id="edit-analysis-url" type="url" class="edit-text-input" placeholder="Slack 링크..." />
+                  <button id="edit-analysis-submit" type="button" class="edit-submit-btn">추가</button>
+                </div>
+                <p id="edit-analysis-status" class="edit-status"></p>
+              </div>
+              <div class="edit-section">
+                <h4 class="edit-section-title">결과</h4>
+                <div id="edit-manual-outcome"></div>
+                <div class="edit-input-row">
+                  <input id="edit-outcome-url" type="url" class="edit-text-input" placeholder="Slack 링크..." />
+                  <button id="edit-outcome-submit" type="button" class="edit-submit-btn">설정</button>
+                </div>
+                <p id="edit-outcome-status" class="edit-status"></p>
+              </div>
+            </div>
+
+            <div id="abtest-slack-loading" class="abtest-slack-loading">Slack 데이터를 불러오는 중입니다...</div>
+            <div id="abtest-slack-notfound" class="abtest-slack-notfound" hidden>Slack에서 관련 스레드를 찾지 못했습니다.</div>
+
+            <div id="abtest-slack-results" hidden>
+              <div id="abtest-threads"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- A/B 분석 (통계) -->
+      <main id="abtest-analysis-view" class="abtest-view" hidden>
+        <section class="panel panel-results abtest-panel">
+
+          <!-- 목록 섹션 -->
+          <div id="abtest-analysis-list-section">
+            <div class="panel-header panel-header-tight">
+              <h2>A/B Test 분석</h2>
+              <p class="subheadline">테스트를 선택하면 Retention, Revenue, Wager, %ROOC를 통계 검정과 함께 분석합니다.</p>
+            </div>
+            <div class="abtest-search-bar">
+              <select id="abtest-analysis-list-game" class="abtest-game-select">
+                <option value="cvs">CVS</option>
+                <option value="cbn">CBN</option>
+                <option value="jpm">JPM</option>
+              </select>
+              <select id="abtest-analysis-list-status" class="abtest-game-select">
+                <option value="all">전체</option>
+                <option value="active">진행중</option>
+                <option value="ended">종료</option>
+              </select>
+              <input type="text" id="abtest-analysis-list-search" class="abtest-search-input" placeholder="이름, ID 검색..." autocomplete="off" />
+            </div>
+            <p id="abtest-analysis-list-meta" class="subheadline">목록을 불러오는 중입니다.</p>
+            <div id="abtest-analysis-list-root" class="abtest-list-root"></div>
+          </div>
+
+          <!-- 상세/분석 섹션 -->
+          <div id="abtest-analysis-detail-section" hidden>
+            <div class="abtest-detail-header">
+              <button id="abtest-analysis-back-button" class="secondary-button" type="button">← 목록으로</button>
+              <div>
+                <h2 id="abtest-analysis-detail-title">A/B Test 분석</h2>
+                <p id="abtest-analysis-detail-meta" class="subheadline"></p>
+              </div>
+              <button id="abtest-analysis-cache-reset-result" type="button" class="cache-reset-button" hidden>캐시 삭제</button>
+            </div>
+
+            <form id="abtest-analysis-form" class="analysis-form">
+              <label class="field">
+                <span class="form-label">Game</span>
+                <select id="abtest-analysis-game">
+                  <option value="cvs">CVS</option>
+                  <option value="cbn">CBN</option>
+                  <option value="jpm">JPM</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="form-label">A/B Test ID</span>
+                <input id="abtest-analysis-id" type="text" placeholder="e.g. 215" autocomplete="off" />
+              </label>
+              <button class="run-button" type="submit">분석 실행</button>
+              <button id="abtest-analysis-cache-reset" type="button" class="cache-reset-button">캐시 초기화</button>
+            </form>
+
+            <div id="abtest-analysis-empty" class="analysis-empty">
+              <strong>아직 실행 전입니다.</strong>
+              <p>Game과 A/B Test ID를 입력하고 실행하면 통계 검정 결과를 볼 수 있습니다.</p>
+            </div>
+
+          <div id="abtest-analysis-loading" hidden>
+            <p class="subheadline">쿼리 실행 중입니다. 잠시만 기다려주세요...</p>
+          </div>
+
+          <div id="abtest-analysis-results" hidden>
+            <!-- Meta info (hidden - 상단 헤더와 중복) -->
+            <div class="analysis-card" id="abtest-analysis-meta-card" hidden>
+              <div class="visual-card-head">
+                <h3 id="abtest-analysis-test-name">Test Name</h3>
+                <p id="abtest-analysis-test-meta" class="subheadline"></p>
+              </div>
+              <div id="abtest-analysis-groups-grid" class="summary-grid"></div>
+            </div>
+
+            <!-- 그룹 요약 랭킹 -->
+            <div class="analysis-card" id="abtest-analysis-ranking-card">
+              <div class="visual-card-head">
+                <h3>그룹 요약</h3>
+              </div>
+              <div id="abtest-analysis-ranking" class="table-root"></div>
+            </div>
+
+            <!-- 그룹 차트 -->
+            <div class="analysis-card" id="abtest-analysis-group-charts">
+              <div class="group-charts-grid">
+                <div class="group-chart-item">
+                  <p class="group-chart-title">Revenue / Assigned User (할당 전후)</p>
+                  <canvas id="chart-rev-per-user"></canvas>
+                </div>
+                <div class="group-chart-item">
+                  <p class="group-chart-title">Payer Rate (할당 전후)</p>
+                  <canvas id="chart-payer-rate"></canvas>
+                </div>
+                <div class="group-chart-item group-chart-wide">
+                  <p class="group-chart-title">Revenue / User (Segment별)</p>
+                  <div class="segment-charts-grid">
+                    <div class="segment-chart-item">
+                      <p class="segment-chart-label">Whale</p>
+                      <canvas id="chart-seg-whale"></canvas>
+                    </div>
+                    <div class="segment-chart-item">
+                      <p class="segment-chart-label">Non-whale</p>
+                      <canvas id="chart-seg-nonwhale"></canvas>
+                    </div>
+                    <div class="segment-chart-item">
+                      <p class="segment-chart-label">Non-payer</p>
+                      <canvas id="chart-seg-nonpayer"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div id="chart-retention-days" hidden></div>
+              </div>
+            </div>
+
+            <!-- 쌍 선택기 -->
+            <div class="analysis-card pair-selector-card">
+              <div class="pair-selector">
+                <span class="pair-selector-label">상세 비교</span>
+                <select id="abtest-pair-group-a" class="pair-group-select"></select>
+                <span class="pair-vs">vs</span>
+                <select id="abtest-pair-group-b" class="pair-group-select"></select>
+              </div>
+            </div>
+
+            <!-- Pre-period Baseline -->
+            <div class="analysis-card">
+              <div class="visual-card-head">
+                <h3>할당 전 30일 지표</h3>
+              </div>
+              <div id="abtest-analysis-preperiod" class="table-root"></div>
+            </div>
+
+            <!-- Retention -->
+            <div class="analysis-card">
+              <div class="visual-card-head">
+                <h3>Retention</h3>
+              </div>
+              <div id="abtest-analysis-retention" class="table-root"></div>
+            </div>
+
+            <!-- Revenue -->
+            <div class="analysis-card">
+              <div class="visual-card-head">
+                <h3>Revenue</h3>
+              </div>
+              <div id="abtest-analysis-revenue" class="table-root"></div>
+            </div>
+
+            <!-- Segment Analysis -->
+            <div class="analysis-card">
+              <div class="visual-card-head">
+                <h3>Revenue 세그먼트 분석</h3>
+              </div>
+              <div id="abtest-analysis-segment-dist" class="table-root table-root--mb"></div>
+              <div id="abtest-analysis-segment-effects" class="table-root table-root--mb"></div>
+              <div id="abtest-analysis-segment-payer-rate" class="table-root"></div>
+            </div>
+
+            <!-- Product Breakdown -->
+            <div class="analysis-card" id="abtest-analysis-product-card" hidden>
+              <div class="visual-card-head">
+                <h3>Product Breakdown</h3>
+              </div>
+              <div id="abtest-product-list"></div>
+            </div>
+
+            <!-- Post-rollout -->
+            <div class="analysis-card" id="abtest-analysis-postrollout-card" hidden>
+              <div class="visual-card-head">
+                <h3>종료 후 60일 지표</h3>
+              </div>
+              <div id="abtest-analysis-postrollout" class="table-root"></div>
+            </div>
+          </div>
+          </div><!-- /abtest-analysis-detail-section -->
+        </section>
+      </main>
+
+      <!-- Product 설정 -->
+      <main id="product-config-view" class="abtest-view" hidden>
+        <section class="panel panel-results abtest-panel">
+
+          <div id="product-config-list-section">
+            <div class="panel-header panel-header-tight">
+              <h2>Product 타입 설정</h2>
+              <p class="subheadline">AB Test별로 분석에 포함할 상품 타입을 선택하고 저장합니다. 미선택 시 해당 테스트의 상품 분석을 건너뜁니다.</p>
+            </div>
+            <div class="abtest-search-bar">
+              <select id="product-config-list-game" class="abtest-game-select">
+                <option value="cvs">CVS</option>
+                <option value="cbn">CBN</option>
+                <option value="jpm">JPM</option>
+              </select>
+              <input type="text" id="product-config-list-search" class="abtest-search-input" placeholder="이름, ID 검색..." autocomplete="off" />
+            </div>
+            <p id="product-config-list-meta" class="subheadline">목록을 불러오는 중입니다.</p>
+            <div id="product-config-list-root" class="abtest-list-root"></div>
+          </div>
+
+        </section>
+      </main>
+    </div><!-- /page-shell -->
+
+    <script type="module" src="/abtest.js?v=20260408c"></script>
+  </body>
+</html>

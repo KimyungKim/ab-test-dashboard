@@ -1,0 +1,13 @@
+# 환경변수 (토큰/시크릿)
+.env
+.env.local
+.env.*.local
+
+# 업로드 파일
+public/abtest-uploads/
+
+# macOS
+.DS_Store
+
+# 로그
+*.log
