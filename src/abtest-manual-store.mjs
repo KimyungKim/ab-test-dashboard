@@ -1,19 +1,18 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import { storageRead, storageWrite } from "./storage.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STORE_PATH = path.join(__dirname, "../config/abtest-manual.json");
 
 async function load() {
-  try { return JSON.parse(await readFile(STORE_PATH, "utf8")); }
+  try { return await storageRead(STORE_PATH); }
   catch { return {}; }
 }
 
 async function save(data) {
-  await mkdir(path.dirname(STORE_PATH), { recursive: true });
-  await writeFile(STORE_PATH, JSON.stringify(data, null, 2), "utf8");
+  await storageWrite(STORE_PATH, data);
 }
 
 function emptyRecord() {

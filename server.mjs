@@ -1,8 +1,9 @@
 import "./src/env-loader.mjs";
 import { createServer } from "node:http";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { storageRead, storageWrite } from "./src/storage.mjs";
 import { getAppSession } from "./src/app-core.mjs";
 import { fetchAbTestSlackData, fetchSlackThread, getChannelInfo } from "./src/slack-client.mjs";
 import { classifyThreadMessages } from "./src/slack-classifier.mjs";
@@ -353,7 +354,7 @@ async function handleApi(request, response) {
       const cacheKey = `${gameCode || "cvs"}-${sortedIds}${ptHash}`;
       const cachePath = path.join(analysisCacheDir, `${cacheKey}.json`);
       try {
-        const cached = JSON.parse(await readFile(cachePath, "utf8"));
+        const cached = await storageRead(cachePath);
         if (!Array.isArray(cached.dailyPreRevRows)) throw new Error("stale cache");
         console.log(`[cache] hit: ${cacheKey}`);
         writeJson(response, 200, cached);
@@ -363,7 +364,7 @@ async function handleApi(request, response) {
       if (result?.meta?.endPst) {
         const daysSinceEnd = (Date.now() - new Date(result.meta.endPst).getTime()) / 86_400_000;
         if (daysSinceEnd >= 60) {
-          writeFile(cachePath, JSON.stringify(result), "utf8")
+          storageWrite(cachePath, result)
             .then(() => console.log(`[cache] saved: ${cacheKey}`))
             .catch(err => console.error(`[cache] write error: ${cacheKey}`, err));
         }
@@ -374,13 +375,27 @@ async function handleApi(request, response) {
 
     // ── 캐시 삭제 (전체) ──────────────────────────────────────────
     if (request.method === "DELETE" && url.pathname === "/api/abtest-analysis/cache/all") {
-      const { readdir, unlink } = await import("node:fs/promises");
-      try {
-        const files = await readdir(analysisCacheDir);
-        await Promise.all(files.filter(f => f.endsWith(".json")).map(f => unlink(path.join(analysisCacheDir, f))));
-        console.log(`[cache] cleared all (${files.length} files)`);
-        writeJson(response, 200, { ok: true, count: files.length });
-      } catch { writeJson(response, 200, { ok: false }); }
+      const s3Bucket = (process.env.S3_BUCKET || "").trim();
+      if (s3Bucket) {
+        try {
+          const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
+          const s3 = new S3Client({ region: process.env.S3_REGION || "ap-northeast-2" });
+          const prefix = (process.env.S3_PREFIX ? process.env.S3_PREFIX + "/" : "") + "data/analysis-cache/";
+          const listed = await s3.send(new ListObjectsV2Command({ Bucket: s3Bucket, Prefix: prefix }));
+          const objects = (listed.Contents || []).map(o => ({ Key: o.Key }));
+          if (objects.length) await s3.send(new DeleteObjectsCommand({ Bucket: s3Bucket, Delete: { Objects: objects } }));
+          console.log(`[cache] cleared all S3 (${objects.length} files)`);
+          writeJson(response, 200, { ok: true, count: objects.length });
+        } catch { writeJson(response, 200, { ok: false }); }
+      } else {
+        const { readdir, unlink } = await import("node:fs/promises");
+        try {
+          const files = await readdir(analysisCacheDir);
+          await Promise.all(files.filter(f => f.endsWith(".json")).map(f => unlink(path.join(analysisCacheDir, f))));
+          console.log(`[cache] cleared all (${files.length} files)`);
+          writeJson(response, 200, { ok: true, count: files.length });
+        } catch { writeJson(response, 200, { ok: false }); }
+      }
       return;
     }
 
@@ -390,12 +405,25 @@ async function handleApi(request, response) {
       const sortedIds2 = String(abTestId).split(",").map(s => s.trim()).filter(Boolean).map(Number).sort((a, b) => b - a).join(",");
       const cacheKey = `${gameCode || "cvs"}-${sortedIds2}`;
       const cachePath = path.join(analysisCacheDir, `${cacheKey}.json`);
-      try {
-        const { unlink } = await import("node:fs/promises");
-        await unlink(cachePath);
-        console.log(`[cache] cleared: ${cacheKey}`);
-        writeJson(response, 200, { ok: true });
-      } catch { writeJson(response, 200, { ok: false, reason: "no cache" }); }
+      const s3Bucket = (process.env.S3_BUCKET || "").trim();
+      if (s3Bucket) {
+        try {
+          const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+          const s3 = new S3Client({ region: process.env.S3_REGION || "ap-northeast-2" });
+          const { storageRead: _r } = await import("./src/storage.mjs");
+          const key = (process.env.S3_PREFIX ? process.env.S3_PREFIX + "/" : "") + `data/analysis-cache/${cacheKey}.json`;
+          await s3.send(new DeleteObjectCommand({ Bucket: s3Bucket, Key: key }));
+          console.log(`[cache] cleared S3: ${cacheKey}`);
+          writeJson(response, 200, { ok: true });
+        } catch { writeJson(response, 200, { ok: false, reason: "no cache" }); }
+      } else {
+        try {
+          const { unlink } = await import("node:fs/promises");
+          await unlink(cachePath);
+          console.log(`[cache] cleared: ${cacheKey}`);
+          writeJson(response, 200, { ok: true });
+        } catch { writeJson(response, 200, { ok: false, reason: "no cache" }); }
+      }
       return;
     }
 
