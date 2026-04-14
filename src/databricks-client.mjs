@@ -55,7 +55,10 @@ function getWarehouseId() {
 }
 
 function isOAuthConfigured() {
-  return requiredEnvVars.every(envName => Boolean(process.env[envName]));
+  return Boolean(normalizeHost()) &&
+    Boolean(process.env.DATABRICKS_CLIENT_ID) &&
+    Boolean(process.env.DATABRICKS_CLIENT_SECRET) &&
+    Boolean(getWarehouseId());
 }
 
 function isPatConfigured() {
