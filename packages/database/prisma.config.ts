@@ -11,9 +11,9 @@ function buildDatabaseUrl(): string | undefined {
   return undefined
 }
 
+const url = buildDatabaseUrl()
+
 export default defineConfig({
   schema: './prisma/schema.prisma',
-  datasource: {
-    url: buildDatabaseUrl(),
-  },
+  ...(url !== undefined ? { datasource: { url } } : {}),
 })
