@@ -1,9 +1,9 @@
 #!/bin/sh
 
-SCHEMA_CHANGED=$(git diff --cached --name-only | grep 'packages/database/prisma/schema.prisma')
+SCHEMA_CHANGED=$(git diff --cached --name-only | grep 'packages/database/prisma/schema.prisma' || true)
 
 if [ -n "$SCHEMA_CHANGED" ]; then
-  MIGRATION_ADDED=$(git diff --cached --name-only | grep 'packages/database/prisma/migrations/')
+  MIGRATION_ADDED=$(git diff --cached --name-only | grep 'packages/database/prisma/migrations/' || true)
 
   if [ -z "$MIGRATION_ADDED" ]; then
     echo ""
