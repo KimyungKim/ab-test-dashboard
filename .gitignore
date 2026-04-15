@@ -6,10 +6,11 @@ dist/
 .env.*.local
 .turbo/
 coverage/
-prisma/generated/
+**/prisma/generated/
 .DS_Store
 Thumbs.db
 *.log
+*.tsbuildinfo
 
 # 로컬 운영 데이터 (DB 마이그레이션 후 불필요)
 config/

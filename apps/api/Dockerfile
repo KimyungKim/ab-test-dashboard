@@ -43,4 +43,6 @@ COPY --from=builder --chown=nestjs:nodejs /app/packages/database/prisma.config.t
 USER nestjs
 EXPOSE 3001
 ENV PORT=3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3001/health || exit 1
 CMD ["node", "dist/main.js"]
