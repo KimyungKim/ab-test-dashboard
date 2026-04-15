@@ -6,6 +6,7 @@ import {
   drawBeforeAfterChart,
   drawLineChart,
   drawRetentionDayChart,
+  getLineTooltip,
 } from '../lib/chart-utils';
 import {
   deleteAllAnalysisCache,
@@ -400,7 +401,7 @@ function GroupChartsSection({ data }: { data: any }) {
       if (payerRateRef.current) {
         drawBeforeAfterChart(payerRateRef.current, {
           groups, preSeries: prePayerSeries, inSeries: payerRateSeries,
-          preDays: 30, durationDays, formatY: (v: number) => `${fmtNum(v, 1)}%`,
+          preDays: 30, durationDays, formatY: (v: number) => `${fmtNum(v, 2)}%`,
         });
       }
       const segCanvases: Record<string, React.RefObject<HTMLCanvasElement | null>> = {
@@ -410,7 +411,7 @@ function GroupChartsSection({ data }: { data: any }) {
         if (ref.current) {
           drawLineChart(ref.current, {
             series: groups.map((g: any) => ({ name: g.name, color: g.color, points: segRevSeries[seg]?.[g.name] || [] })),
-            durationDays, formatY: (v: number) => `$${fmtNum(v, 0)}`,
+            durationDays, formatY: (v: number) => `$${fmtNum(v, 2)}`,
           });
         }
       }
@@ -453,9 +454,6 @@ function GroupChartsSection({ data }: { data: any }) {
             </div>
           </div>
         </div>
-        {activeDays.length > 0 && (
-          <RetentionDayCharts groups={groups} groupSummary={groupSummary} activeDays={activeDays} />
-        )}
       </div>
     </div>
   );
@@ -522,51 +520,114 @@ function RetentionLineChart({ pairRet, groupA, groupB, colorA, colorB, durationD
     const allVals = series.flatMap(s => s.values).filter((v): v is number => v !== null);
     if (!allVals.length) return;
     const rawMax = Math.max(...allVals);
+    const rawMin = Math.min(...allVals);
     const yMax = Math.ceil(rawMax / 5) * 5 + 5;
-    const yMin = 0;
+    const yMin = Math.max(0, Math.floor(rawMin / 5) * 5 - 5);
     const xAt = (i: number) => PAD.left + (days.length > 1 ? i / (days.length - 1) : 0.5) * chartW;
     const yAt = (v: number) => PAD.top + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
-    ctx.clearRect(0, 0, W, H);
-    const yTicks = 5;
-    ctx.font = '11px system-ui, sans-serif';
-    for (let i = 0; i <= yTicks; i++) {
-      const v = yMin + (yMax - yMin) * i / yTicks;
-      const y = yAt(v);
-      ctx.strokeStyle = 'rgba(29,29,27,0.07)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + chartW, y); ctx.stroke();
-      ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-      ctx.fillText(v.toFixed(0) + '%', PAD.left - 6, y);
-    }
-    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    days.forEach((d, i) => ctx.fillText(d.label, xAt(i), PAD.top + chartH + 8));
-    for (const s of series) {
-      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
-      ctx.beginPath();
-      let moved = false;
-      s.values.forEach((v, i) => {
-        if (v === null) { moved = false; return; }
-        if (!moved) { ctx.moveTo(xAt(i), yAt(v)); moved = true; } else ctx.lineTo(xAt(i), yAt(v));
+
+    const redraw = () => {
+      ctx.clearRect(0, 0, W, H);
+      const yTicks = 5;
+      ctx.font = '11px system-ui, sans-serif';
+      for (let i = 0; i <= yTicks; i++) {
+        const v = yMin + (yMax - yMin) * i / yTicks;
+        const y = yAt(v);
+        ctx.strokeStyle = 'rgba(29,29,27,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + chartW, y); ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(v.toFixed(2) + '%', PAD.left - 6, y);
+      }
+      ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      days.forEach((d, i) => ctx.fillText(d.label, xAt(i), PAD.top + chartH + 8));
+      for (const s of series) {
+        ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        let moved = false;
+        s.values.forEach((v, i) => {
+          if (v === null) { moved = false; return; }
+          if (!moved) { ctx.moveTo(xAt(i), yAt(v)); moved = true; } else ctx.lineTo(xAt(i), yAt(v));
+        });
+        ctx.stroke();
+        s.values.forEach((v, i) => {
+          if (v === null) return;
+          ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xAt(i), yAt(v), 4, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(xAt(i), yAt(v), 3, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      const legendY = PAD.top + chartH + 30;
+      const SWATCH = 12, GAP = 6, SPACING = 24;
+      ctx.textBaseline = 'middle'; ctx.font = '11px system-ui, sans-serif';
+      const itemWidths = series.map(s => SWATCH + GAP + ctx.measureText(s.name).width);
+      const totalW = itemWidths.reduce((a, b) => a + b, 0) + SPACING * (series.length - 1);
+      let lx = PAD.left + (chartW - totalW) / 2;
+      for (const s of series) {
+        ctx.fillStyle = s.color; ctx.fillRect(lx, legendY - 2, SWATCH, 3);
+        ctx.fillStyle = '#63584f'; ctx.textAlign = 'left';
+        ctx.fillText(s.name, lx + SWATCH + GAP, legendY);
+        lx += SWATCH + GAP + ctx.measureText(s.name).width + SPACING;
+      }
+    };
+    redraw();
+
+    // Tooltip
+    const tooltip = getLineTooltip();
+    canvas.onmousemove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      const mx = (e.clientX - rect.left) * scaleX;
+      const my = (e.clientY - rect.top) * scaleY;
+      // find closest x index
+      let closestIdx = -1;
+      let minDx = Infinity;
+      days.forEach((_, i) => {
+        const dx = Math.abs(mx - xAt(i));
+        if (dx < minDx) { minDx = dx; closestIdx = i; }
       });
-      ctx.stroke();
-      s.values.forEach((v, i) => {
+      if (closestIdx < 0 || minDx > chartW / days.length) {
+        tooltip.style.display = 'none';
+        return;
+      }
+      const d = days[closestIdx];
+      tooltip.innerHTML = '';
+      const dayEl = document.createElement('div');
+      dayEl.className = 'tooltip-day';
+      dayEl.textContent = d.label;
+      tooltip.appendChild(dayEl);
+      series.forEach((s, si) => {
+        const v = s.values[closestIdx];
         if (v === null) return;
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xAt(i), yAt(v), 4, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(xAt(i), yAt(v), 3, 0, Math.PI * 2); ctx.fill();
+        const row = document.createElement('div');
+        const dot = document.createElement('span');
+        dot.className = `tooltip-dot tooltip-dot--${si}`;
+        dot.style.background = s.color;
+        row.appendChild(dot);
+        row.appendChild(document.createTextNode(`${s.name}: `));
+        const val = document.createElement('strong');
+        val.textContent = v.toFixed(2) + '%';
+        row.appendChild(val);
+        tooltip.appendChild(row);
       });
-    }
-    const legendY = PAD.top + chartH + 30;
-    const SWATCH = 12, GAP = 6, SPACING = 24;
-    ctx.textBaseline = 'middle'; ctx.font = '11px system-ui, sans-serif';
-    const itemWidths = series.map(s => SWATCH + GAP + ctx.measureText(s.name).width);
-    const totalW = itemWidths.reduce((a, b) => a + b, 0) + SPACING * (series.length - 1);
-    let lx = PAD.left + (chartW - totalW) / 2;
-    for (const s of series) {
-      ctx.fillStyle = s.color; ctx.fillRect(lx, legendY - 2, SWATCH, 3);
-      ctx.fillStyle = '#63584f'; ctx.textAlign = 'left';
-      ctx.fillText(s.name, lx + SWATCH + GAP, legendY);
-      lx += SWATCH + GAP + ctx.measureText(s.name).width + SPACING;
-    }
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY - tooltip.offsetHeight / 2) + 'px';
+      // highlight dot
+      redraw();
+      const hx = xAt(closestIdx);
+      series.forEach(s => {
+        const v = s.values[closestIdx];
+        if (v === null) return;
+        const hy = yAt(v);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = s.color; ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2); ctx.fill();
+      });
+    };
+    canvas.onmouseleave = () => {
+      tooltip.style.display = 'none';
+      redraw();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(pairRet), groupA, groupB, durationDays]);
   return <canvas ref={canvasRef} style={{ display: 'block', width: '100%' }} />;
@@ -1608,39 +1669,17 @@ function AbTestDashboardTab() {
               <h2>{detailTitle}</h2>
               <p className="subheadline">{detailMeta}</p>
             </div>
-            {analysisData && (
+            <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', flex: 'none' }}>
               <button type="button" className="cache-reset-button" disabled={cacheResetting} onClick={handleCacheReset}>
-                {cacheResetting ? '삭제 중...' : '캐시 삭제'}
+                {cacheResetting ? '초기화 중...' : '캐시 초기화'}
               </button>
-            )}
-          </div>
-
-          <form className="analysis-form" onSubmit={e => { e.preventDefault(); runFlow(analysisId, analysisGame); }}>
-            <label className="field">
-              <span className="form-label">Game</span>
-              <select value={analysisGame} onChange={e => setAnalysisGame(e.target.value)}>
-                <option value="cvs">CVS</option>
-                <option value="cbn">CBN</option>
-                <option value="jpm">JPM</option>
-              </select>
-            </label>
-            <label className="field">
-              <span className="form-label">A/B Test ID</span>
-              <input type="text" value={analysisId} onChange={e => setAnalysisId(e.target.value)}
-                placeholder="e.g. 215" autoComplete="off" />
-            </label>
-            <button className="run-button" type="submit">분석 실행</button>
-            <button type="button" className="cache-reset-button" disabled={cacheResetting} onClick={handleCacheReset}>
-              {cacheResetting ? '삭제 중...' : '캐시 초기화'}
-            </button>
-          </form>
-
-          {!analysisLoading && !analysisData && !analysisError && (
-            <div className="analysis-empty">
-              <strong>아직 실행 전입니다.</strong>
-              <p>Game과 A/B Test ID를 입력하고 실행하면 통계 검정 결과를 볼 수 있습니다.</p>
+              {analysisData && (
+                <button type="button" className="cache-reset-button" disabled={cacheResetting} onClick={handleCacheReset}>
+                  {cacheResetting ? '삭제 중...' : '캐시 삭제'}
+                </button>
+              )}
             </div>
-          )}
+          </div>
           {analysisError && (
             <div className="analysis-empty">
               <strong>오류가 발생했습니다.</strong>
@@ -1653,20 +1692,6 @@ function AbTestDashboardTab() {
 
           {analysisData && !analysisLoading && (
             <>
-              {/* Groups summary */}
-              <div className="analysis-card">
-                <div className="visual-card-head"><h3>그룹 구성</h3></div>
-                <div className="summary-grid">
-                  {analysisData.groups.map((g: any) => (
-                    <div key={g.group_name} className="summary-card">
-                      <p className="summary-label">{g.group_name}</p>
-                      <p className="summary-value">{fmtNum(g.n)}</p>
-                      <p className="summary-sub">assigned users</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Pair selector */}
               <div className="analysis-card pair-selector-card">
                 <div className="pair-selector">

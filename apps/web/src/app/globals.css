@@ -896,7 +896,7 @@ th {
   flex-shrink: 0;
 }
 
-.abtest-detail-header > div {
+.abtest-detail-header > div:first-of-type {
   flex: 1;
   min-width: 0;
 }

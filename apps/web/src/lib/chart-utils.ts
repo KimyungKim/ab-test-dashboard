@@ -54,7 +54,7 @@ export interface GroupedBarChartOptions {
 }
 
 export function drawGroupedBarChart(canvas: HTMLCanvasElement, options: GroupedBarChartOptions): void {
-  const { xLabels, groups, formatY = (v: number) => fmtNum(v, 1), chartH: fixedH = 220 } = options;
+  const { xLabels, groups, formatY = (v: number) => fmtNum(v, 2), chartH: fixedH = 220 } = options;
   if (!canvas) return;
   const H = fixedH;
   const { ctx, W } = setupCanvas(canvas, H);
@@ -109,7 +109,7 @@ export interface RetentionDayChartOptions {
 }
 
 export function drawRetentionDayChart(canvas: HTMLCanvasElement, options: RetentionDayChartOptions): void {
-  const { groups, formatY = (v: number) => `${fmtNum(v, 1)}%` } = options;
+  const { groups, formatY = (v: number) => `${fmtNum(v, 2)}%` } = options;
   if (!canvas) return;
   const H = 320, W = 130;
   canvas.width = W * devicePixelRatio;

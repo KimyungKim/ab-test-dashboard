@@ -1,7 +1,10 @@
 {
   "name": "ab-test-dashboard",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
@@ -13,12 +16,18 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "husky": "^9.0.0",
+    "tsx": "^4.21.0",
     "turbo": "latest",
-    "husky": "^9.0.0"
+    "typescript": "^5.0.0"
   },
   "packageManager": "pnpm@10.33.0",
   "pnpm": {
-    "onlyBuiltDependencies": ["@nestjs/core", "@prisma/engines", "prisma", "sharp"]
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/engines",
+      "prisma",
+      "sharp"
+    ]
   }
 }
