@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate": "prisma generate --config prisma.config.ts",
+    "db:generate": "prisma generate --config prisma.config.ts",
     "push": "prisma db push --config prisma.config.ts",
     "migrate": "prisma migrate dev --config prisma.config.ts",
     "studio": "prisma studio --config prisma.config.ts",
