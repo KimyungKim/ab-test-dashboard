@@ -1,0 +1,26 @@
+status: porting
+original_branch: main
+project_name: ab-test-dashboard
+created_at: "2026-04-15"
+source_stack: "Node.js ESM + Vanilla JS SPA"
+app_type: fullstack
+features:
+  ported: []
+  excluded:
+    - "Mock 모드 (APP_MODE=mock)"
+    - "S3 스토리지 분기 로직 (storage.mjs)"
+  remaining:
+    - "Prisma 스키마 정의 (Wave 1)"
+    - "NestJS - AbTestSlack 모듈 (Wave 2)"
+    - "NestJS - AbTestManual 모듈 (Wave 2)"
+    - "NestJS - AbTestConclusion 모듈 (Wave 2)"
+    - "NestJS - AbTestProductConfig 모듈 (Wave 2)"
+    - "NestJS - AbTestAnalysis 모듈 (Wave 2)"
+    - "NestJS - Databricks 클라이언트 (Wave 2)"
+    - "NestJS - Slack 클라이언트 (Wave 2)"
+    - "NestJS - OpenAI 분류기 (Wave 2)"
+    - "Next.js - A/B Test in Slack 탭 (Wave 3)"
+    - "Next.js - A/B Test Dashboard 탭 (Wave 3)"
+    - "Next.js - Product 설정 탭 (Wave 3)"
+    - "데이터 마이그레이션 스크립트 (Wave 4)"
+    - "통합 검증 (Wave 4)"

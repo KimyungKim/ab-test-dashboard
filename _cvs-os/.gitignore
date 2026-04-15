@@ -1,0 +1,10 @@
+node_modules/
+.next/
+dist/
+.env.local
+.turbo/
+data/
+coverage/
+prisma/generated/
+.DS_Store
+Thumbs.db

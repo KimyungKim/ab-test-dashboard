@@ -1,0 +1,64 @@
+version: "1"
+
+services:
+  web:
+    path: apps/web
+    dockerfile: apps/web/Dockerfile
+    port: 3000
+    public: true
+
+  api:
+    path: apps/api
+    dockerfile: apps/api/Dockerfile
+    port: 3001
+    public: false
+    health: /health
+
+database: true
+
+env:
+  platform:
+    - API_URL
+
+  secrets:
+    - name: DATABRICKS_CLIENT_ID
+      required: true
+      description: "Databricks OAuth M2M Client ID"
+    - name: DATABRICKS_CLIENT_SECRET
+      required: true
+      description: "Databricks OAuth M2M Client Secret"
+    - name: SLACK_USER_TOKEN
+      required: true
+      description: "Slack User Token (xoxp-...)"
+    - name: OPENAI_API_KEY
+      required: false
+      description: "OpenAI API Key (AI Proxy 대체 가능)"
+
+  variables:
+    - name: DATABRICKS_HOST
+      required: true
+      description: "Databricks workspace hostname"
+    - name: DATABRICKS_HTTP_PATH
+      required: true
+      description: "Databricks SQL warehouse HTTP path"
+    - name: SERVING_CATALOG
+      default: "analytics_serving"
+      required: false
+    - name: SERVING_SCHEMA
+      default: "gameops"
+      required: false
+    - name: VIEW_AE_DAILY
+      default: "ae_daily_secure"
+      required: false
+    - name: VIEW_AE_SEGMENT
+      default: "ae_segment_secure"
+      required: false
+    - name: VIEW_AE_RETENTION
+      default: "ae_retention_secure"
+      required: false
+    - name: DEFAULT_GAME_CODE
+      default: "STARBLITZ"
+      required: false
+    - name: LOG_LEVEL
+      default: "info"
+      required: false

@@ -1,0 +1,21 @@
+{
+  "name": "ab-test-dashboard",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "eslint .",
+    "db:generate": "turbo db:generate",
+    "db:push": "turbo db:push",
+    "db:migrate": "turbo db:migrate",
+    "db:studio": "turbo db:studio",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "turbo": "latest",
+    "husky": "^9.0.0"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
