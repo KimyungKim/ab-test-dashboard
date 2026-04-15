@@ -1,0 +1,73 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma/client"
+}
+
+// A/B Test 수동 입력 데이터 (공지, 분석 결과, 결론)
+model AbtestManualAnnouncement {
+  id        String   @id @default(uuid())
+  testKey   String   @unique // "{game}-{ids}" 형식
+  url       String
+  text      String?
+  imageUrls String[]
+  ts        String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AbtestManualAnalysisItem {
+  id        String   @id @default(uuid())
+  testKey   String   // "{game}-{ids}" 형식
+  url       String
+  text      String?
+  imageUrls String[]
+  ts        String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([testKey])
+}
+
+model AbtestManualOutcome {
+  id        String   @id @default(uuid())
+  testKey   String   @unique
+  url       String
+  text      String?
+  imageUrls String[]
+  ts        String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A/B Test 결론 (종합 판단)
+model AbtestConclusion {
+  id          String   @id @default(uuid())
+  primaryId   String   @unique // Slack primary test ID
+  conclusion  String
+  decidedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Product 타입 설정
+model AbtestProductConfig {
+  id           String   @id @default(uuid())
+  testKey      String   @unique // "{game}-{ids}" 형식
+  productTypes String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 분석 결과 캐시
+model AbtestAnalysisCache {
+  id        String   @id @default(uuid())
+  cacheKey  String   @unique // "{game}-{ids}[-pt{types}]" 형식
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+SCHEMA_CHANGED=$(git diff --cached --name-only | grep 'packages/database/prisma/schema.prisma' || true)
+
+if [ -n "$SCHEMA_CHANGED" ]; then
+  MIGRATION_ADDED=$(git diff --cached --name-only | grep 'packages/database/prisma/migrations/' || true)
+
+  if [ -z "$MIGRATION_ADDED" ]; then
+    echo ""
+    echo "Prisma 스키마가 변경되었지만 마이그레이션 파일이 없습니다."
+    echo "   'pnpm db:migrate' 로 마이그레이션을 생성해주세요."
+    echo ""
+    exit 1
+  fi
+fi

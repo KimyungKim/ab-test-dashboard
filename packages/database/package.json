@@ -1,0 +1,26 @@
+{
+  "name": "@ab-test-dashboard/database",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "prisma generate --config prisma.config.ts",
+    "db:generate": "prisma generate --config prisma.config.ts",
+    "push": "prisma db push --config prisma.config.ts",
+    "migrate": "prisma migrate dev --config prisma.config.ts",
+    "studio": "prisma studio --config prisma.config.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@prisma/client": "7.7.0",
+    "@prisma/adapter-pg": "7.7.0",
+    "pg": "^8.0.0",
+    "dotenv": "latest"
+  },
+  "devDependencies": {
+    "prisma": "7.7.0",
+    "typescript": "^5.0.0",
+    "@types/pg": "latest"
+  },
+  "main": "src/index.ts"
+}
