@@ -59,6 +59,10 @@ env:
     - name: DEFAULT_GAME_CODE
       default: "STARBLITZ"
       required: false
+    - name: OPENAI_RESTRICTION_MODEL
+      default: "gpt-4o-mini"
+      required: false
+      description: "OpenAI 분석 모델"
     - name: LOG_LEVEL
       default: "info"
       required: false
