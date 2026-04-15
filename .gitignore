@@ -1,13 +1,20 @@
-# 환경변수 (토큰/시크릿)
+node_modules/
+.next/
+dist/
 .env
 .env.local
 .env.*.local
+.turbo/
+coverage/
+**/prisma/generated/
+.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo
+
+# 로컬 운영 데이터 (DB 마이그레이션 후 불필요)
+config/
+data/
 
 # 업로드 파일
 public/abtest-uploads/
-
-# macOS
-.DS_Store
-
-# 로그
-*.log
