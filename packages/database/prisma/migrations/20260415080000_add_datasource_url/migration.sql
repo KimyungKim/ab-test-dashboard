@@ -1,0 +1,2 @@
+-- schema.prisma datasource에 url = env("DATABASE_URL") 추가
+-- 데이터베이스 구조 변경 없음 (연결 설정만 변경)
