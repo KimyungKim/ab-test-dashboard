@@ -1,13 +1,24 @@
 {
-  "name": "secure-ae-browser",
+  "name": "ab-test-dashboard",
   "private": true,
-  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "node --watch server.mjs",
-    "check": "node --check server.mjs && node --check public/app.js"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "eslint .",
+    "db:generate": "turbo db:generate",
+    "db:push": "turbo db:push",
+    "db:migrate": "turbo db:migrate",
+    "db:studio": "turbo db:studio",
+    "prepare": "husky"
   },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1029.0"
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "turbo": "latest",
+    "husky": "^9.0.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@nestjs/core", "@prisma/engines", "prisma", "sharp"]
   }
 }
