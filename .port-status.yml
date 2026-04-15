@@ -1,26 +1,39 @@
-status: porting
+status: complete
 original_branch: main
 project_name: ab-test-dashboard
 created_at: "2026-04-15"
+completed_at: "2026-04-13"
 source_stack: "Node.js ESM + Vanilla JS SPA"
+target_stack: "Next.js 16 + NestJS 11 + Prisma 7 + PostgreSQL 17"
 app_type: fullstack
+cvs_os_dir: "_cvs-os/"
 features:
-  ported: []
-  excluded:
-    - "Mock 모드 (APP_MODE=mock)"
-    - "S3 스토리지 분기 로직 (storage.mjs)"
-  remaining:
+  ported:
     - "Prisma 스키마 정의 (Wave 1)"
+    - "NestJS - Databricks 클라이언트 (Wave 2)"
+    - "NestJS - Slack 클라이언트 (Wave 2)"
+    - "NestJS - OpenAI 분류기 (Wave 2 - rule-based)"
+    - "NestJS - AbTestList 모듈 (Wave 2)"
     - "NestJS - AbTestSlack 모듈 (Wave 2)"
     - "NestJS - AbTestManual 모듈 (Wave 2)"
     - "NestJS - AbTestConclusion 모듈 (Wave 2)"
     - "NestJS - AbTestProductConfig 모듈 (Wave 2)"
     - "NestJS - AbTestAnalysis 모듈 (Wave 2)"
-    - "NestJS - Databricks 클라이언트 (Wave 2)"
-    - "NestJS - Slack 클라이언트 (Wave 2)"
-    - "NestJS - OpenAI 분류기 (Wave 2)"
     - "Next.js - A/B Test in Slack 탭 (Wave 3)"
     - "Next.js - A/B Test Dashboard 탭 (Wave 3)"
     - "Next.js - Product 설정 탭 (Wave 3)"
     - "데이터 마이그레이션 스크립트 (Wave 4)"
-    - "통합 검증 (Wave 4)"
+  excluded:
+    - "Mock 모드 (APP_MODE=mock)"
+    - "S3 스토리지 분기 로직 (storage.mjs)"
+  remaining:
+    - "통합 검증 (Wave 4) - 로컬 환경에서 직접 확인 필요"
+
+next_steps:
+  - "cd _cvs-os && pnpm install"
+  - "docker compose up -d (PostgreSQL 기동)"
+  - "DATABASE_URL=... pnpm --filter @ab-test-dashboard/database prisma migrate dev"
+  - "DATABASE_URL=... npx ts-node scripts/migrate-json-to-pg.ts --dry-run (검증)"
+  - "DATABASE_URL=... npx ts-node scripts/migrate-json-to-pg.ts (실제 마이그레이션)"
+  - "pnpm dev (개발 서버 기동)"
+  - "통합 검증 후 phase 6 (루트 promote) 진행"

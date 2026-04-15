@@ -1,8 +1,5 @@
+import AbTestPage from '../components/AbTestPage'
+
 export default function Home() {
-  return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold">A/B Test Dashboard</h1>
-      <p className="mt-2 text-gray-600">포팅 진행 중...</p>
-    </main>
-  )
+  return <AbTestPage />
 }

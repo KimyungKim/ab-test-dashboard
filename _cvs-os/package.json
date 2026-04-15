@@ -17,5 +17,8 @@
     "turbo": "latest",
     "husky": "^9.0.0"
   },
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": ["@nestjs/core", "@prisma/engines", "prisma", "sharp"]
+  }
 }
