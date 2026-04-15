@@ -1,0 +1,3 @@
+-- schema.prisma datasource에서 url 제거
+-- Prisma 7에서 datasource url은 schema.prisma가 아닌 prisma.config.ts에서만 설정 가능
+-- 데이터베이스 구조 변경 없음
