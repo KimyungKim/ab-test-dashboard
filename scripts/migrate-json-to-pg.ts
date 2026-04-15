@@ -16,19 +16,19 @@
  */
 
 import 'dotenv/config'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../packages/database/prisma/generated/prisma/client/client.ts'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const ROOT = path.resolve(__dirname, '../../..') // AB Test Dashboard root
+const ROOT = path.resolve(__dirname, '..') // AB Test Dashboard root
 
 const isDryRun = process.argv.includes('--dry-run')
 
-const prisma = new PrismaClient({
-  log: isDryRun ? [] : ['warn', 'error'],
-})
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter })
 
 async function readJson<T>(filePath: string): Promise<T | null> {
   try {
@@ -79,7 +79,9 @@ async function migrateManual() {
     if (record.announcement) {
       const item = record.announcement
       const url = item.slackUrl || item.url || item.permalink || ''
-      const imageUrls = item.imageUrls || item.images || []
+      const imageUrls = (item.imageUrls || item.images || []).map((img: any) =>
+        typeof img === 'string' ? img : JSON.stringify(img)
+      )
       if (!isDryRun) {
         await prisma.abtestManualAnnouncement.upsert({
           where: { testKey },
@@ -94,7 +96,9 @@ async function migrateManual() {
     for (let i = 0; i < record.analysisItems.length; i++) {
       const item = record.analysisItems[i]
       const url = item.slackUrl || item.url || item.permalink || ''
-      const imageUrls = item.imageUrls || item.images || []
+      const imageUrls = (item.imageUrls || item.images || []).map((img: any) =>
+        typeof img === 'string' ? img : JSON.stringify(img)
+      )
       if (!isDryRun) {
         await prisma.abtestManualAnalysisItem.upsert({
           where: { id: item.id },
@@ -109,7 +113,9 @@ async function migrateManual() {
     if (record.outcome) {
       const item = record.outcome
       const url = item.slackUrl || item.url || item.permalink || ''
-      const imageUrls = item.imageUrls || item.images || []
+      const imageUrls = (item.imageUrls || item.images || []).map((img: any) =>
+        typeof img === 'string' ? img : JSON.stringify(img)
+      )
       if (!isDryRun) {
         await prisma.abtestManualOutcome.upsert({
           where: { testKey },
